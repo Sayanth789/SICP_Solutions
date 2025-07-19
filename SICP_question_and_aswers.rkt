@@ -179,9 +179,12 @@
                    ;   return n * n
         ;          print(apply_twice(square, 2))   # output  
 
-;;implementation of continued fraction, which comverge to the value of 1 / phi
+;;implementation of continued fraction, which covverge to the value of 1 / phi
+; Also note that the cont-frac is short for continued fraction.A continued fraction is a way of representing
+;;;  numbers (like e or π) as nested fraction.It’s especially useful for approximating irrational numbers using a sequence of simpler fractions.
 
 ;; Note that cond-frac can be expressed as: f(x) = { Ni / Di + F(i +1) if i <= k,  0 else
+
 
  (define (cont-frac n d k)   ;; Where k is the limit
    (define (recurse i)
@@ -192,3 +195,134 @@
 
  (define k 5) ; or whatever value you prefer
  (cont-frac (lambda (i) 1.0) (lambda (i) 1.0) k)
+
+;;The algorithm to compute, e -2 (using Euler's paper).In which the fraction Ni(N sub i stands for numerators) are all 1 and
+;; the Di's (similiarly, D sub i are all denominators) are suucessively 1, 2, 1, 1, 4, 1, 1, 6, 1, 1, 8....etc.
+;;The procedure below calculates the approximate value of e, using the procedure cont-frac.
+
+
+
+#lang racket
+(define (cont-frac n d k)
+  (define (recurse i)
+    (if (> i k)
+        0 
+        (/ (n i) (+ (d i) (recurse (+ i 1))))))
+  (recurse 1))
+
+(define (e-approx k)
+  (cont-frac 
+   (lambda (i) 1.0) ;; Ni = 1 
+   (lambda (i)      ;; Di follows the pattern
+     (if (= (remainder i 3) 2)   ;if the remainder of i / 3 = 2
+         (* 2 (/ (+ i 1) 3))  ;; then we're at position 2, 5, 8, 11 .. i.e. if i mod 3 == 2 then,
+         1.0))    ;; we compute 2 *( i + 1)/3
+   k))
+
+(+ 2 (e-approx 10)) ; e = 2 + continued fraction
+;;;  Here we add 2 to get the correct value of 'e'.
+;;; ----------------------------------------------------------------------------------------------
+
+
+;;; ;; The procedure  calculate tan(x) = x / 1 - x^2 / 3 - x^2 / 5 - x^2/ 7 ...
+;;; ------------------------------------------------------------------------------------------------
+
+(define (cont-frac n d k)
+    (define (iter i result)
+        (if (= i 0) 
+            result
+                (iter (- i 1) ;; else moves to i - 1 
+                      (/ (n i) ;; which is n(i) / d(i) -> result
+                          (- (d i) result)))))
+       (iter k 0 ))    
+(define (tan-cf x k )
+    (define (n i ) (* x x ))  ;;; Numerator = x ** 2
+        (define (d i) (- (* 2 i) 1)) ;; Denominator = 2i -1
+        (/ x (cont-frac n d k)))  ;; the formula x / 1 - x^2 /3 - x ^2 / 5 ...
+
+(tan-cf 0.30 10) 
+
+
+;;; Answer to the question: Define a cubic procedure that can be used togehter with the newton-method
+;;; procedure in expression of the form 
+;;; (newtons-method (cubic a b c) 1) to approximate zeros of the cubic x^3 + ax^2 + bx + c
+
+
+(define (newton-method f f-prime guess tolerance) 
+    (define (improve guess) 
+        (- guess (/ (f guess) (f-prime guess))))
+    (define (good-enough? old new)
+        (< (abs (- old new)) tolerance))
+    (define (iterate guess) 
+        (let ((next (improve guess)))
+            (if (good-enough? guess next)
+                next 
+                    (iterate next))))
+    (iterate guess))
+(define (square x) (* x x))
+    (define (cube x) (* x x x))
+
+(define (cubic a b c)
+    (lambda (x) 
+        (+ (cube x)
+           (* a (square x))
+           (* b x)
+           c)))
+;;; This returns a function that computes the x^3 + ax^2 + bx + c
+
+(define (cubic-derivatve a b c ) 
+    (lambda (x) 
+        (+ (* 3 (square x))
+           (* 2 a x) 
+           b)))
+;;;Defining the variables
+
+(define a 1)
+(define b 1)
+(define c 3)
+;; calling the function 
+
+(newton-method (cubic a b c)
+                (cubic-derivatve a b c)
+                1.0
+                0.00001)
+
+
+; ______________________________________________________________________________________________________________
+; Procedure double that takes argument a function and returns a procedure that applies the original procedure twice.
+
+ (define (double f)
+     (lambda (x) (f (f x))))
+
+ (define (compose f g)  
+     (lambda (x) (f (g x))))
+
+;The procedure that take input as a procedure and a number n and returns a procedure that computes the n'th repeated application of f.
+; We use the composition function and use recursion to do so, taking base case as n = 1.
+(define (repeated f n)
+     (if (= n 1)
+         f
+         (compose f(repeated f (- n 1)))))
+; checking the function
+(define (square x) (* x x))
+((repeated square 2) 5)  ;; == square(square 5) == square(25)
+
+;where f is a procedure that computes f
+(define (smooth f dx)
+    (lambda (x)
+        (/ (+ (f (- x dx)) (f x) (f (+ x dx))) 3)))
+
+(define (square x) (* x x))
+(define dx 0.0001)
+
+(define smooth-square (smooth square dx2))
+
+(smooth-square 5)
+;;And using composed smoothing the functionn f 'n' times
+(define (n-fold-smooth f dx n)
+    ((repeated (lambda (g) (smooth g dx2)) n) f))
+(define (square x) (* x x))
+(define dx2 0.0001)
+
+(define smooth-square (n-fold-smooth square dx2 3))  ;; smoothes the square function 3 times
+(smooth-square 5)
