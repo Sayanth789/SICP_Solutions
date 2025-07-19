@@ -7,7 +7,7 @@ This repository contains selected solutions from the classic book **Structure an
 - `SICP_question_and_aswers.rkt`: Racket code with selected answers and questions.
 
 - ## Notes
-- * I chose to upload the questions and answers as a single file: in which questions are commented and answers are given right below it(Because i thought it'll be better in that way).
+- * I chose to upload the questions and answers as a single file: in which questions are commented and answers are given right below it (because I thought it'll be better in that way).
   * I added additional comments that help to think more clearly(for instance some egs: are converted to more familiar language like python to understand the concepts better).
   * 
   
